@@ -3,6 +3,7 @@ package opensrs
 import (
 	"crypto/md5"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,19 +70,18 @@ func xmlMessage(nsm NestedStringMap) string {
 	return s
 }
 
-func NewXCPClient(url string, username string, privateKey string) XCPClient {
+func NewXCPClient(url string, username string, privateKey string) *XCPClient {
 	xcp := XCPClient{
 		url:        url,
 		username:   username,
 		privateKey: privateKey,
 	}
-	return xcp
+	return &xcp
 }
 
 func (c *XCPClient) createSignature(xml string) string {
 	x := md5.Sum([]byte(xml + c.privateKey))
 	y := md5.Sum([]byte(fmt.Sprintf("%x", x) + c.privateKey))
-	fmt.Printf("MD5 %x\n", y)
 	return fmt.Sprintf("%x", y)
 }
 
@@ -200,6 +200,8 @@ func (c *XCPClient) xmlResponseToNSM(xmlr io.Reader) (*NestedStringMap, error) {
 			}
 		}
 	}
-	fmt.Println(*root)
+	if root == nil {
+		return nil, errors.New("No associative array found in response")
+	}
 	return root, nil
 }
