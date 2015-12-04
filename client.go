@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -96,7 +95,6 @@ func (c *XCPClient) doRequest(xmlrequest string) (response *NestedStringMap, err
 	request.Header.Add("X-Username", c.username)
 	request.Header.Add("X-Signature", c.createSignature(xmlrequest))
 	request.ContentLength = int64(len(xmlrequest))
-	request.Header.Write(os.Stdout)
 
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {
