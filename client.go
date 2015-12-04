@@ -125,6 +125,18 @@ func (n NestedStringMap) getString(key string) (string, bool) {
 	return s, true
 }
 
+func (n NestedStringMap) getInteger(key string) (int, bool) {
+	s, ok := n.getString(key)
+	if !ok {
+		return 0, false
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, false
+	}
+	return i, true
+}
+
 func (n NestedStringMap) getMap(key string) (*NestedStringMap, bool) {
 	path := strings.Split(key, "/")
 	for _, item := range path {
@@ -159,7 +171,7 @@ func (c *XCPClient) xmlResponseToNSM(xmlr io.Reader) (*NestedStringMap, error) {
 		switch se := t.(type) {
 		case xml.StartElement:
 			switch se.Name.Local {
-			case "dt_assoc":
+			case "dt_assoc", "dt_array":
 				assoc := NestedStringMap{}
 				if currentItem != nil {
 					(*currentItem)[currentKey] = assoc
@@ -170,6 +182,7 @@ func (c *XCPClient) xmlResponseToNSM(xmlr io.Reader) (*NestedStringMap, error) {
 				stack = append(stack, &assoc)
 				currentItem = &assoc
 				simple = false
+
 			case "item":
 				charData = ""
 				for _, k := range se.Attr {
@@ -181,7 +194,7 @@ func (c *XCPClient) xmlResponseToNSM(xmlr io.Reader) (*NestedStringMap, error) {
 			}
 		case xml.EndElement:
 			switch se.Name.Local {
-			case "dt_assoc":
+			case "dt_assoc", "dt_array":
 				stack = stack[:len(stack)-1]
 				if len(stack) > 0 {
 					currentItem = stack[len(stack)-1]
