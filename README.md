@@ -8,9 +8,9 @@ Go package for interacting with the OpenSRS domain management interface via XCP.
     res, _ := xcp.GetInfo("example.com")
     fmt.Println("Expiry date" + res.ExpiryDate.Format("2006-01-02T15:04:05"))
 
-## Support methods
+## Supported methods
 
-At present only the following methods are support:
+At present only the following methods are supported:
 
 * GetInfo - response object is incompletely populated
 * GetDSRecords
