@@ -2,7 +2,6 @@ package opensrs
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 )
 
@@ -28,8 +27,7 @@ func (c *XCPClient) SetDSRecords(domain string, dsr []DSRecord) error {
 		},
 	}
 
-	xml := xmlMessage(nsm)
-	res, err := c.doRequest(xml)
+	res, err := c.doRequest(nsm)
 	if err != nil {
 		return err
 	}
@@ -38,8 +36,6 @@ func (c *XCPClient) SetDSRecords(domain string, dsr []DSRecord) error {
 		msg, _ := res.getString("response_text")
 		return errors.New("Error: " + msg)
 	}
-
-	fmt.Println(res)
 
 	return nil
 }

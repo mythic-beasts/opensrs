@@ -1,6 +1,7 @@
 package opensrs
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/xml"
 	"errors"
@@ -19,40 +20,39 @@ type XCPClient struct {
 
 type NestedStringMap map[string]interface{}
 
-func serializeItem(k string, v interface{}) string {
-	s := fmt.Sprintf(`<item key="%s">`, k)
+func serializeItem(k string, v interface{}, w io.Writer) {
+	w.Write([]byte(`<item key="`))
+	xml.EscapeText(w, []byte(k))
+	w.Write([]byte(`">`))
 	switch i := v.(type) {
 	case string:
-		s += i
+		xml.EscapeText(w, []byte(i))
 	case NestedStringMap:
-		s += serializeMap(i)
+		serializeMap(i, w)
 	case []NestedStringMap:
-		s += serializeArray(i)
+		serializeArray(i, w)
 	}
-	s += `</item>`
-	return s
+	w.Write([]byte(`</item>`))
 }
 
-func serializeArray(nsm []NestedStringMap) string {
-	s := `<dt_array>`
+func serializeArray(nsm []NestedStringMap, w io.Writer) {
+	w.Write([]byte(`<dt_array>`))
 	for i, v := range nsm {
-		s += serializeItem(strconv.Itoa(i), v)
+		serializeItem(strconv.Itoa(i), v, w)
 	}
-	s += `</dt_array>`
-	return s
+	w.Write([]byte(`</dt_array>`))
 }
 
-func serializeMap(nsm NestedStringMap) string {
-	s := `<dt_assoc>`
+func serializeMap(nsm NestedStringMap, w io.Writer) {
+	w.Write([]byte(`<dt_assoc>`))
 	for k, v := range nsm {
-		s += serializeItem(k, v)
+		serializeItem(k, v, w)
 	}
-	s += `</dt_assoc>`
-	return s
+	w.Write([]byte(`</dt_assoc>`))
 }
 
-func xmlMessage(nsm NestedStringMap) string {
-	s := `<?xml version="1.0" encoding="UTF-8" standalone='yes'?>
+func writeXMLMessage(nsm NestedStringMap, w io.Writer) {
+	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone='yes'?>
 <!DOCTYPE OPS_envelope SYSTEM 'ops.dtd'>
 <OPS_envelope>
 <header>
@@ -60,13 +60,12 @@ func xmlMessage(nsm NestedStringMap) string {
  </header>
  <body>
    <data_block>
-`
-	s += serializeMap(nsm)
+`))
+	serializeMap(nsm, w)
 
-	s += `</data_block>
+	w.Write([]byte(`</data_block>
 </body>
-</header>`
-	return s
+</header>`))
 }
 
 func NewXCPClient(url string, username string, privateKey string) *XCPClient {
@@ -84,17 +83,20 @@ func (c *XCPClient) createSignature(xml string) string {
 	return fmt.Sprintf("%x", y)
 }
 
-func (c *XCPClient) doRequest(xmlrequest string) (response *NestedStringMap, err error) {
+func (c *XCPClient) doRequest(requestNSM NestedStringMap) (response *NestedStringMap, err error) {
 
-	request, err := http.NewRequest("POST", c.url, strings.NewReader(xmlrequest))
+	var xmlRequest bytes.Buffer
+	writeXMLMessage(requestNSM, &xmlRequest)
+
+	request, err := http.NewRequest("POST", c.url, &xmlRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	request.Header.Add("Content-Type", "text/xml")
 	request.Header.Add("X-Username", c.username)
-	request.Header.Add("X-Signature", c.createSignature(xmlrequest))
-	request.ContentLength = int64(len(xmlrequest))
+	request.Header.Add("X-Signature", c.createSignature(xmlRequest.String()))
+	request.ContentLength = int64(len(xmlRequest.String()))
 
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {

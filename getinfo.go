@@ -19,8 +19,7 @@ func (c *XCPClient) GetInfo(domain string) (*GetInfoResponse, error) {
 			"type":   "all_info",
 		},
 	}
-	xml := xmlMessage(nsm)
-	res, err := c.doRequest(xml)
+	res, err := c.doRequest(nsm)
 
 	if err != nil {
 		return nil, err

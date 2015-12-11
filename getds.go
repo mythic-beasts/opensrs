@@ -2,7 +2,6 @@ package opensrs
 
 import (
 	"errors"
-	"fmt"
 )
 
 type DSRecord struct {
@@ -22,10 +21,7 @@ func (c *XCPClient) GetDSRecords(domain string) ([]DSRecord, error) {
 			"type":   "dnssec",
 		},
 	}
-	xml := xmlMessage(nsm)
-	res, err := c.doRequest(xml)
-	fmt.Println("GET DS Response:")
-	fmt.Println(*res)
+	res, err := c.doRequest(nsm)
 	dsr := []DSRecord{}
 	if err != nil {
 		return dsr, err
