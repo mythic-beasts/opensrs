@@ -30,12 +30,22 @@ func serializeItem(k string, v interface{}, w io.Writer) {
 	case NestedStringMap:
 		serializeMap(i, w)
 	case []NestedStringMap:
-		serializeArray(i, w)
+		serializeNSMArray(i, w)
+	case []string:
+		serializeStringArray(i, w)
 	}
 	w.Write([]byte(`</item>`))
 }
 
-func serializeArray(nsm []NestedStringMap, w io.Writer) {
+func serializeNSMArray(nsm []NestedStringMap, w io.Writer) {
+	w.Write([]byte(`<dt_array>`))
+	for i, v := range nsm {
+		serializeItem(strconv.Itoa(i), v, w)
+	}
+	w.Write([]byte(`</dt_array>`))
+}
+
+func serializeStringArray(nsm []string, w io.Writer) {
 	w.Write([]byte(`<dt_array>`))
 	for i, v := range nsm {
 		serializeItem(strconv.Itoa(i), v, w)
